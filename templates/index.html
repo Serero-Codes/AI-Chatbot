@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Buddy — AI Health Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:         #050b18;
+  --bg2:        #080f20;
+  --surface:    rgba(255,255,255,0.04);
+  --surface2:   rgba(255,255,255,0.07);
+  --border:     rgba(255,255,255,0.08);
+  --border2:    rgba(255,255,255,0.14);
+  --blue:       #3b6ef8;
+  --blue-light: #6b93ff;
+  --blue-glow:  rgba(59,110,248,0.25);
+  --cyan:       #22d3ee;
+  --purple:     #a855f7;
+  --green:      #22c55e;
+  --text:       #f0f4ff;
+  --text2:      #8b9dc3;
+  --text3:      #4a5878;
+  --font-h:     'Syne', sans-serif;
+  --font-b:     'Inter', sans-serif;
+  --r:          14px;
+  --r-lg:       20px;
+  --r-xl:       28px;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--font-b); background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+
+#stars-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+#landing-page, #chat-page { position: relative; z-index: 1; }
+#chat-page { display: none; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 16px 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(5,11,24,0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; font-family: var(--font-h);
+  font-size: 20px; font-weight: 700; color: var(--text);
+}
+.nav-logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 0 20px var(--blue-glow);
+}
+.nav-links { display: flex; gap: 32px; list-style: none; }
+.nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { display: flex; gap: 10px; }
+.btn-outline {
+  padding: 9px 20px; border: 1px solid var(--border2); border-radius: var(--r);
+  background: transparent; color: var(--text); font-family: var(--font-b);
+  font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.btn-outline:hover { background: var(--surface2); border-color: var(--blue); }
+.btn-primary {
+  padding: 9px 20px; border: none; border-radius: var(--r);
+  background: linear-gradient(135deg, var(--blue), #5b3ef8);
+  color: white; font-family: var(--font-b); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 20px var(--blue-glow);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(59,110,248,0.45); }
+.hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+.hamburger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh; display: flex; align-items: center;
+  padding: 100px 5% 60px; position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(59,110,248,0.12) 0%, transparent 70%);
+  left: -150px; top: 50%; transform: translateY(-50%); pointer-events: none;
+}
+.hero::after {
+  content: ''; position: absolute;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%);
+  right: 10%; top: 20%; pointer-events: none;
+}
+.hero-inner {
+  max-width: 1200px; margin: 0 auto; width: 100%;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+}
+.hero-content { position: relative; z-index: 2; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(59,110,248,0.1); border: 1px solid rgba(59,110,248,0.25);
+  border-radius: 100px; padding: 6px 14px; font-size: 13px;
+  color: var(--blue-light); font-weight: 500; margin-bottom: 28px;
+  animation: fadeSlideUp 0.6s ease both;
+}
+.badge-dot { width: 7px; height: 7px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 8px var(--cyan); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.hero-title { font-family: var(--font-h); font-size: clamp(38px, 5vw, 64px); font-weight: 800; line-height: 1.05; margin-bottom: 24px; animation: fadeSlideUp 0.6s 0.1s ease both; }
+.gradient-text { background: linear-gradient(135deg, var(--blue-light), var(--cyan), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero-sub { font-size: 17px; color: var(--text2); line-height: 1.7; max-width: 480px; margin-bottom: 40px; animation: fadeSlideUp 0.6s 0.2s ease both; font-weight: 300; }
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; animation: fadeSlideUp 0.6s 0.3s ease both; }
+@keyframes fadeSlideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+.btn-hero-primary {
+  padding: 14px 28px; border: none; border-radius: var(--r);
+  background: linear-gradient(135deg, var(--blue), #5b3ef8);
+  color: white; font-family: var(--font-b); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.25s; box-shadow: 0 6px 24px var(--blue-glow);
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(59,110,248,0.5); }
+.btn-hero-secondary {
+  padding: 14px 28px; border: 1px solid var(--border2); border-radius: var(--r);
+  background: var(--surface2); color: var(--text); font-family: var(--font-b);
+  font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.25s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-hero-secondary:hover { background: rgba(255,255,255,0.1); border-color: var(--blue); }
+
+/* Hero visual */
+.hero-visual { position: relative; z-index: 2; display: flex; justify-content: center; align-items: center; animation: fadeSlideUp 0.6s 0.4s ease both; }
+.hero-card-stack { position: relative; width: 380px; height: 440px; }
+.hero-main-img {
+  width: 100%; height: 100%; border-radius: var(--r-xl);
+  background: linear-gradient(160deg, rgba(59,110,248,0.15), rgba(168,85,247,0.1));
+  border: 1px solid var(--border2); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  animation: heroFloat 6s ease-in-out infinite;
+}
+@keyframes heroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+.hero-main-img .ph-icon { font-size: 80px; }
+.hero-main-img .ph-label { font-size: 12px; color: var(--text2); text-align: center; max-width: 220px; line-height: 1.5; }
+
+.float-bubble {
+  position: absolute; background: rgba(8,15,32,0.85); backdrop-filter: blur(16px);
+  border: 1px solid var(--border2); border-radius: var(--r);
+  padding: 10px 14px; font-size: 13px; font-weight: 500; white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.float-bubble.b1 { top: 30px; right: -60px; animation: fb1 4s ease-in-out infinite; }
+.float-bubble.b2 { bottom: 80px; left: -70px; animation: fb2 4s 1.5s ease-in-out infinite; }
+.float-bubble.b3 { top: 48%; right: -80px; transform: translateY(-50%); animation: fb3 4s 0.8s ease-in-out infinite; }
+@keyframes fb1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes fb2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes fb3 { 0%,100%{transform:translateY(-50%)} 50%{transform:translateY(calc(-50% - 8px))} }
+
+/* ── TRUST STRIP ── */
+.trust-strip { padding: 48px 5%; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); text-align: center; position: relative; z-index: 2; }
+.trust-strip h3 { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--text3); font-weight: 600; margin-bottom: 32px; }
+.trust-logos { display: flex; justify-content: center; align-items: center; gap: 48px; flex-wrap: wrap; }
+.trust-logo { opacity: 0.3; font-family: var(--font-h); font-size: 18px; font-weight: 700; color: var(--text); transition: opacity 0.2s; }
+.trust-logo:hover { opacity: 0.65; }
+
+/* ── SECTION WRAPPER ── */
+.section { padding: 100px 5%; position: relative; z-index: 2; }
+.section-header { text-align: center; max-width: 600px; margin: 0 auto 64px; }
+.section-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,110,248,0.1); border: 1px solid rgba(59,110,248,0.2); border-radius: 100px; padding: 5px 12px; font-size: 12px; color: var(--blue-light); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+.section-title { font-family: var(--font-h); font-size: clamp(28px, 3.5vw, 44px); font-weight: 700; line-height: 1.15; margin-bottom: 16px; }
+.section-sub { font-size: 16px; color: var(--text2); line-height: 1.7; font-weight: 300; }
+
+/* ── FEATURE CARDS ── */
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto; }
+.feature-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 32px 28px; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.feature-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(59,110,248,0.05), transparent); opacity: 0; transition: opacity 0.3s; }
+.feature-card:hover { border-color: rgba(59,110,248,0.3); transform: translateY(-4px); }
+.feature-card:hover::before { opacity: 1; }
+.feature-icon { width: 52px; height: 52px; border-radius: var(--r); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 20px; }
+.icon-blue   { background: rgba(59,110,248,0.15); }
+.icon-cyan   { background: rgba(34,211,238,0.12); }
+.icon-purple { background: rgba(168,85,247,0.12); }
+.icon-green  { background: rgba(34,197,94,0.12);  }
+.icon-pink   { background: rgba(236,72,153,0.12); }
+.icon-amber  { background: rgba(245,158,11,0.12); }
+.feature-title { font-family: var(--font-h); font-size: 18px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+.feature-desc { font-size: 14px; color: var(--text2); line-height: 1.65; font-weight: 300; }
+
+/* ── SHOWCASE ── */
+.showcase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1200px; margin: 0 auto; }
+.showcase-card { border-radius: var(--r-lg); overflow: hidden; background: var(--surface); border: 1px solid var(--border); transition: all 0.3s; }
+.showcase-card:hover { border-color: rgba(59,110,248,0.3); transform: translateY(-4px); }
+.showcase-img {
+  height: 200px; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px; border-bottom: 1px solid var(--border); position: relative; overflow: hidden;
+}
+.showcase-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.showcase-img.s1 { background: linear-gradient(160deg, rgba(59,110,248,0.18), rgba(34,211,238,0.08)); }
+.showcase-img.s2 { background: linear-gradient(160deg, rgba(168,85,247,0.18), rgba(59,110,248,0.08)); }
+.showcase-img.s3 { background: linear-gradient(160deg, rgba(34,197,94,0.12), rgba(34,211,238,0.08)); }
+.showcase-ph { font-size: 36px; }
+.showcase-ph-label { font-size: 11px; color: var(--text3); font-weight: 500; }
+.showcase-body { padding: 20px; }
+.showcase-tag { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--blue-light); margin-bottom: 6px; }
+.showcase-title { font-family: var(--font-h); font-size: 17px; font-weight: 600; line-height: 1.3; }
+
+/* ── CTA ── */
+.cta-section { padding: 100px 5%; text-align: center; position: relative; z-index: 2; overflow: hidden; }
+.cta-section::before { content: ''; position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(59,110,248,0.1), transparent 70%); left: 50%; top: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+.cta-inner { max-width: 600px; margin: 0 auto; position: relative; }
+.cta-title { font-family: var(--font-h); font-size: clamp(28px, 3.5vw, 44px); font-weight: 700; margin-bottom: 16px; line-height: 1.15; }
+.cta-sub { font-size: 16px; color: var(--text2); margin-bottom: 36px; font-weight: 300; line-height: 1.6; }
+
+/* ── FOOTER ── */
+footer { padding: 40px 5%; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2; flex-wrap: wrap; gap: 16px; }
+.footer-logo { display: flex; align-items: center; gap: 8px; font-family: var(--font-h); font-size: 16px; font-weight: 700; color: var(--text); }
+.footer-copy { font-size: 13px; color: var(--text3); }
+.footer-links { display: flex; gap: 24px; list-style: none; }
+.footer-links a { font-size: 13px; color: var(--text3); text-decoration: none; transition: color 0.2s; }
+.footer-links a:hover { color: var(--text2); }
+
+/* ════════════════════════════
+   CHAT PAGE
+════════════════════════════ */
+#chat-page { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: 80px 16px 16px; }
+#chat-page.active { display: flex; }
+
+.chat-page-inner { width: 100%; max-width: 820px; height: calc(100vh - 96px); min-height: 500px; display: flex; flex-direction: column; }
+
+.chat-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: rgba(8,15,32,0.9); backdrop-filter: blur(20px); border: 1px solid var(--border); border-bottom: none; border-radius: var(--r-xl) var(--r-xl) 0 0; }
+.chat-header-left { display: flex; align-items: center; gap: 12px; }
+.chat-avatar { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 0 20px var(--blue-glow); flex-shrink: 0; }
+.chat-hdr-info h2 { font-family: var(--font-h); font-size: 16px; font-weight: 600; color: var(--text); }
+.chat-hdr-info p { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 5px; }
+.online-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 8px var(--green); animation: blink 2s infinite; }
+.chat-hdr-actions { display: flex; gap: 8px; }
+.chat-icon-btn { width: 36px; height: 36px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r); color: var(--text2); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.chat-icon-btn:hover { background: rgba(59,110,248,0.15); border-color: rgba(59,110,248,0.3); color: var(--text); }
+.chat-back-btn { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 6px 12px; cursor: pointer; transition: all 0.2s; font-family: var(--font-b); }
+.chat-back-btn:hover { color: var(--text); background: var(--surface2); }
+
+.chat-messages { flex: 1; overflow-y: auto; padding: 24px 20px; background: rgba(5,11,24,0.7); backdrop-filter: blur(8px); border-left: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth; }
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+.msg-row { display: flex; gap: 10px; align-items: flex-start; animation: msgIn 0.3s ease both; }
+@keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.msg-row.user { flex-direction: row-reverse; }
+.msg-av { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-top: 2px; }
+.msg-av.bot  { background: linear-gradient(135deg, var(--blue), var(--cyan)); }
+.msg-av.user { background: linear-gradient(135deg, #16a34a, var(--green)); }
+.msg-content { max-width: 72%; display: flex; flex-direction: column; gap: 4px; }
+.msg-row.user .msg-content { align-items: flex-end; }
+.msg-bubble { padding: 13px 16px; border-radius: 16px; font-size: 14.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+.msg-bubble.bot-b { background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-top-left-radius: 4px; color: var(--text); }
+.msg-bubble.user-b { background: linear-gradient(135deg, #1d4ed8, var(--blue)); border-top-right-radius: 4px; color: white; box-shadow: 0 4px 16px rgba(59,110,248,0.25); }
+.msg-time { font-size: 11px; color: var(--text3); padding: 0 4px; }
+
+.typing-row { display: flex; gap: 10px; align-items: flex-start; animation: msgIn 0.3s ease both; }
+.typing-bub { background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 16px; border-top-left-radius: 4px; padding: 14px 18px; display: flex; gap: 5px; align-items: center; }
+.dot { width: 7px; height: 7px; background: var(--text3); border-radius: 50%; animation: db 1.2s ease infinite; }
+.dot:nth-child(2){animation-delay:0.15s} .dot:nth-child(3){animation-delay:0.3s}
+@keyframes db { 0%,80%,100%{transform:translateY(0);opacity:0.4} 40%{transform:translateY(-7px);opacity:1} }
+
+.chat-input-area { padding: 14px 16px; background: rgba(8,15,32,0.95); backdrop-filter: blur(20px); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--r-xl) var(--r-xl); }
+.input-row { display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border2); border-radius: var(--r); padding: 8px 8px 8px 16px; transition: border-color 0.2s; }
+.input-row:focus-within { border-color: rgba(59,110,248,0.5); box-shadow: 0 0 0 3px rgba(59,110,248,0.08); }
+#userInput { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-family: var(--font-b); font-size: 14.5px; }
+#userInput::placeholder { color: var(--text3); }
+.input-actions { display: flex; gap: 6px; align-items: center; }
+.input-icon-btn { width: 32px; height: 32px; background: transparent; border: none; color: var(--text3); font-size: 16px; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.input-icon-btn:hover { color: var(--text2); background: var(--surface2); }
+.send-btn { width: 36px; height: 36px; background: linear-gradient(135deg, var(--blue), #5b3ef8); border: none; border-radius: 10px; color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 3px 12px var(--blue-glow); flex-shrink: 0; }
+.send-btn:hover { transform: scale(1.08); box-shadow: 0 5px 20px rgba(59,110,248,0.5); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.chat-footnote { text-align: center; font-size: 11px; color: var(--text3); margin-top: 10px; }
+
+/* ── REMINDER ── */
+.reminder-banner { display: none; position: fixed; top: 80px; left: 50%; transform: translateX(-50%); background: rgba(8,15,32,0.95); border: 1px solid rgba(245,158,11,0.35); border-radius: var(--r); padding: 12px 20px; font-size: 13px; font-weight: 500; color: #fde047; z-index: 200; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: slideDown 0.3s ease; }
+@keyframes slideDown { from{transform:translate(-50%,-20px);opacity:0} to{transform:translate(-50%,0);opacity:1} }
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .hero-inner{grid-template-columns:1fr;text-align:center;gap:40px}
+  .hero-content{order:2} .hero-visual{order:1}
+  .hero-actions{justify-content:center}
+  .hero-sub,.hero-badge{margin-left:auto;margin-right:auto}
+  .hero-card-stack{width:280px;height:320px}
+  .float-bubble.b1{right:-20px} .float-bubble.b2{left:-20px} .float-bubble.b3{right:-20px}
+  .showcase-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+}
+@media(max-width:640px){
+  .float-bubble{display:none}
+  .trust-logos{gap:24px}
+  .features-grid{grid-template-columns:1fr}
+  footer{flex-direction:column;text-align:center}
+  .footer-links{justify-content:center}
+  .chat-page-inner{height:calc(100vh - 80px)}
+  .msg-content{max-width:85%}
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+<div class="reminder-banner" id="reminderBanner">💊 Reminder: Time to take your medication!</div>
+
+<!-- ════════════════════════════════════════
+     LANDING PAGE
+════════════════════════════════════════ -->
+<div id="landing-page">
+
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">💙</div>
+      Health Buddy
+    </a>
+    <ul class="nav-links">
+      <li><a href="#">Home</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#showcase">How It Works</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+    <div class="nav-cta">
+      <button class="btn-outline" onclick="openChat()">Log In</button>
+      <button class="btn-primary" onclick="openChat()">Get Started →</button>
+    </div>
+    <button class="hamburger" onclick="alert('Menu: Home · Features · How It Works · Pricing · Contact')">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-badge"><span class="badge-dot"></span>AI Health Assistant · Powered by LLaMA 3.1</div>
+        <h1 class="hero-title">
+          Your Personal<br>
+          <span class="gradient-text">AI Health Buddy</span><br>
+          Is Here
+        </h1>
+        <p class="hero-sub">Get intelligent health guidance, symptom analysis, and wellness advice — powered by cutting-edge AI. Available 24/7, completely private.</p>
+        <div class="hero-actions">
+          <button class="btn-hero-primary" onclick="openChat()">Start Free Chat →</button>
+          <button class="btn-hero-secondary">👀 Watch Demo</button>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-card-stack">
+
+          <!--
+          ╔═══════════════════════════════════════╗
+          ║  HERO IMAGE / GIF PLACEHOLDER         ║
+          ║                                       ║
+          ║  To replace: add an <img> or <video>  ║
+          ║  inside .hero-main-img like:           ║
+          ║  <img src="robot.gif"                 ║
+          ║    style="width:100%;height:100%;     ║
+          ║    object-fit:cover">                  ║
+          ║                                       ║
+          ║  Recommended: health AI robot /       ║
+          ║  animated doctor illustration         ║
+          ╚═══════════════════════════════════════╝
+          -->
+          <div class="hero-main-img">
+            <span class="ph-icon" style="font-size:80px">🤖</span>
+            <span class="ph-label" style="font-size:12px;color:var(--text2);text-align:center;max-width:220px;line-height:1.5">
+              ★ Drop your hero image or GIF here ★<br>
+              <span style="color:var(--text3)">Recommended: AI doctor / health bot illustration</span>
+            </span>
+          </div>
+
+          <div class="float-bubble b1">💬 Hello! How can I help?</div>
+          <div class="float-bubble b2">🩺 Symptom check ready</div>
+          <div class="float-bubble b3">✅ Available 24/7</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST -->
+  <div class="trust-strip">
+    <h3>Trusted by health-conscious people worldwide</h3>
+    <div class="trust-logos">
+      <span class="trust-logo">MedTech</span>
+      <span class="trust-logo">HealthCare+</span>
+      <span class="trust-logo">WellnessAI</span>
+      <span class="trust-logo">CareConnect</span>
+      <span class="trust-logo">BioSync</span>
+      <span class="trust-logo">VitalHub</span>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-header">
+      <div class="section-badge">✦ Features</div>
+      <h2 class="section-title">Everything you need for smarter health decisions</h2>
+      <p class="section-sub">Health Buddy combines advanced AI with compassionate care to give you real, actionable health guidance.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon icon-blue">🧠</div><h3 class="feature-title">AI Symptom Analysis</h3><p class="feature-desc">Describe your symptoms in plain language and receive intelligent, evidence-based guidance on possible causes and next steps.</p></div>
+      <div class="feature-card"><div class="feature-icon icon-cyan">💊</div><h3 class="feature-title">Medicine Reminders</h3><p class="feature-desc">Never miss a dose. Set personalized medication reminders that alert you right inside the chat interface.</p></div>
+      <div class="feature-card"><div class="feature-icon icon-purple">🗂️</div><h3 class="feature-title">Conversation Memory</h3><p class="feature-desc">Health Buddy remembers your full conversation history, giving you contextual, personalized advice every time.</p></div>
+      <div class="feature-card"><div class="feature-icon icon-green">🥗</div><h3 class="feature-title">Diet &amp; Lifestyle Tips</h3><p class="feature-desc">Get tailored nutrition and lifestyle recommendations based on your specific health concerns and goals.</p></div>
+      <div class="feature-card"><div class="feature-icon icon-pink">🏥</div><h3 class="feature-title">Hospital Finder</h3><p class="feature-desc">Instantly locate the nearest hospitals and clinics using your device location with a single tap.</p></div>
+      <div class="feature-card"><div class="feature-icon icon-amber">🎤</div><h3 class="feature-title">Voice Input</h3><p class="feature-desc">Speak your symptoms hands-free. Our voice recognition lets you describe how you're feeling naturally and intuitively.</p></div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE -->
+  <section class="section" id="showcase">
+    <div class="section-header">
+      <div class="section-badge">✦ How It Works</div>
+      <h2 class="section-title">Intelligent health guidance in 3 steps</h2>
+      <p class="section-sub">Simple, fast, and private. Your health questions answered in seconds.</p>
+    </div>
+    <div class="showcase-grid">
+
+      <!--
+      ╔══════════════════════════════════╗
+      ║  SHOWCASE IMAGE SLOTS            ║
+      ║                                  ║
+      ║  To add images: place an <img>   ║
+      ║  tag inside each .showcase-img:  ║
+      ║  <img src="step1.png"            ║
+      ║    style="width:100%;height:100%;║
+      ║    object-fit:cover;             ║
+      ║    position:absolute;inset:0">   ║
+      ╚══════════════════════════════════╝
+      -->
+
+      <div class="showcase-card">
+        <div class="showcase-img s1">
+          <span class="showcase-ph">💬</span>
+          <span class="showcase-ph-label">★ Image / GIF slot ★</span>
+        </div>
+        <div class="showcase-body">
+          <div class="showcase-tag">Step 01</div>
+          <div class="showcase-title">Describe Your Symptoms</div>
+        </div>
+      </div>
+
+      <div class="showcase-card">
+        <div class="showcase-img s2">
+          <span class="showcase-ph">🤖</span>
+          <span class="showcase-ph-label">★ Image / GIF slot ★</span>
+        </div>
+        <div class="showcase-body">
+          <div class="showcase-tag">Step 02</div>
+          <div class="showcase-title">AI Analyzes &amp; Responds</div>
+        </div>
+      </div>
+
+      <div class="showcase-card">
+        <div class="showcase-img s3">
+          <span class="showcase-ph">✅</span>
+          <span class="showcase-ph-label">★ Image / GIF slot ★</span>
+        </div>
+        <div class="showcase-body">
+          <div class="showcase-tag">Step 03</div>
+          <div class="showcase-title">Get Actionable Guidance</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2 class="cta-title">Ready to take control of<br><span class="gradient-text">your health today?</span></h2>
+      <p class="cta-sub">Join thousands of users who trust Health Buddy for intelligent, compassionate health guidance — available anytime, anywhere.</p>
+      <button class="btn-hero-primary" onclick="openChat()" style="margin:0 auto;display:inline-flex">Start Chatting for Free →</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">
+      <div class="nav-logo-icon" style="width:28px;height:28px;font-size:14px;border-radius:8px">💙</div>
+      Health Buddy
+    </div>
+    <span class="footer-copy">© 2026 Health Buddy · For informational purposes only</span>
+    <ul class="footer-links">
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Terms</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+  </footer>
+
+</div><!-- /landing -->
+
+
+<!-- ════════════════════════════════════════
+     CHAT PAGE
+════════════════════════════════════════ -->
+<div id="chat-page">
+
+  <nav>
+    <a href="#" class="nav-logo" onclick="closeChatPage();return false">
+      <div class="nav-logo-icon">💙</div>
+      Health Buddy
+    </a>
+    <ul class="nav-links"></ul>
+    <div class="nav-cta">
+      <button class="chat-back-btn" onclick="closeChatPage()">← Back to Home</button>
+    </div>
+  </nav>
+
+  <div class="chat-page-inner">
+
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-avatar">👨‍⚕️</div>
+        <div class="chat-hdr-info">
+          <h2>Health Buddy AI</h2>
+          <p><span class="online-dot"></span> Online · Ready to help</p>
+        </div>
+      </div>
+      <div class="chat-hdr-actions">
+        <button class="chat-icon-btn" onclick="startVoice()" title="Voice input">🎤</button>
+        <button class="chat-icon-btn" onclick="findHospital()" title="Find hospital">🏥</button>
+        <button class="chat-icon-btn" onclick="resetChat()" title="New conversation">🔄</button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages"></div>
+
+    <div class="chat-input-area">
+      <div class="input-row">
+        <input type="text" id="userInput" placeholder="Describe your symptoms or ask a health question..." autocomplete="off">
+        <div class="input-actions">
+          <button class="input-icon-btn" onclick="startVoice()">🎤</button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+      <p class="chat-footnote">Health Buddy provides general guidance only · Not a substitute for professional medical advice</p>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+/* ── STARS ── */
+(function(){
+  const cv = document.getElementById('stars-canvas');
+  const cx = cv.getContext('2d');
+  let stars=[], W, H;
+  function resize(){ W=cv.width=window.innerWidth; H=cv.height=window.innerHeight; }
+  function init(){
+    stars=[];
+    for(let i=0;i<200;i++) stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+0.2,tw:Math.random()*Math.PI*2,op:Math.random()*0.6+0.1});
+  }
+  function draw(){
+    cx.clearRect(0,0,W,H);
+    stars.forEach(s=>{
+      s.tw+=0.012;
+      cx.beginPath(); cx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(180,200,255,${s.op*(0.7+0.3*Math.sin(s.tw))})`;
+      cx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',()=>{resize();init();});
+  resize(); init(); draw();
+})();
+
+/* ── NAVIGATION ── */
+function openChat(){
+  document.getElementById('landing-page').style.display='none';
+  const cp=document.getElementById('chat-page');
+  cp.style.display='flex'; cp.classList.add('active');
+  if(!document.getElementById('chatMessages').children.length)
+    addBotMsg("Hello! I'm Health Buddy — your personal AI health assistant. 👋\n\nI'm here to help with symptom guidance, wellness advice, diet tips, and more.\n\nPlease tell me — what health concern can I help you with today?");
+}
+function closeChatPage(){
+  const cp=document.getElementById('chat-page');
+  cp.style.display='none'; cp.classList.remove('active');
+  document.getElementById('landing-page').style.display='block';
+}
+
+/* ── CHAT ── */
+const msgsEl=document.getElementById('chatMessages');
+const sendBtnEl=document.getElementById('sendBtn');
+const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const ts=()=>new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+function addBotMsg(text){
+  const r=document.createElement('div'); r.className='msg-row bot';
+  r.innerHTML=`<div class="msg-av bot">👨‍⚕️</div><div class="msg-content"><div class="msg-bubble bot-b">${esc(text)}</div><span class="msg-time">${ts()}</span></div>`;
+  msgsEl.appendChild(r); msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+function addUserMsg(text){
+  const r=document.createElement('div'); r.className='msg-row user';
+  r.innerHTML=`<div class="msg-av user">🧑</div><div class="msg-content"><div class="msg-bubble user-b">${esc(text)}</div><span class="msg-time">${ts()}</span></div>`;
+  msgsEl.appendChild(r); msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+function showTyping(){
+  const el=document.createElement('div'); el.id='typingRow'; el.className='typing-row';
+  el.innerHTML=`<div class="msg-av bot">👨‍⚕️</div><div class="typing-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  msgsEl.appendChild(el); msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+function hideTyping(){ const el=document.getElementById('typingRow'); if(el)el.remove(); }
+
+async function sendMessage(){
+  const inp=document.getElementById('userInput');
+  const text=inp.value.trim(); if(!text) return;
+  addUserMsg(text); inp.value=''; sendBtnEl.disabled=true; showTyping();
+  try{
+    const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const data=await res.json(); hideTyping();
+    addBotMsg(data.reply || '⚠️ Something went wrong. Please try again.');
+  }catch(e){ hideTyping(); addBotMsg('⚠️ Could not reach the server. Please check your connection.'); }
+  sendBtnEl.disabled=false; inp.focus();
+}
+
+async function resetChat(){
+  await fetch('/reset',{method:'POST'}).catch(()=>{});
+  msgsEl.innerHTML='';
+  addBotMsg("Conversation cleared! How can I help you today?");
+}
+
+document.getElementById('userInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+
+function startVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Voice input not supported in this browser.');return;}
+  const r=new SR(); r.start();
+  r.onresult=e=>{document.getElementById('userInput').value=e.results[0][0].transcript;sendMessage();};
+}
+function findHospital(){
+  if(!navigator.geolocation){alert('Geolocation not supported.');return;}
+  navigator.geolocation.getCurrentPosition(p=>{
+    window.open(`https://www.google.com/maps/search/hospital/@${p.coords.latitude},${p.coords.longitude},15z`);
+  });
+}
+
+/* ── REMINDER ── */
+function showReminder(){
+  const b=document.getElementById('reminderBanner'); b.style.display='block';
+  setTimeout(()=>{b.style.display='none';},5000);
+}
+setInterval(showReminder,60*60*1000);
+
+/* ── SCROLL NAV ── */
+window.addEventListener('scroll',()=>{
+  document.querySelector('nav').style.background=
+    window.scrollY>20?'rgba(5,11,24,0.95)':'rgba(5,11,24,0.7)';
+});
+
+/* ── SCROLL-IN ANIMATION ── */
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';}
+  });
+},{threshold:0.1});
+document.querySelectorAll('.feature-card,.showcase-card').forEach(el=>{
+  el.style.opacity='0'; el.style.transform='translateY(24px)'; el.style.transition='opacity 0.5s ease,transform 0.5s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
