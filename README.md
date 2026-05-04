@@ -85,9 +85,8 @@ health-buddy/
 ## Use Cases
 
 ### Primary Use Cases
-![
-   
-](<use case.png>)
+
+![alt text](<use case-1.png>)
 
 ## Installation
 
